@@ -21,6 +21,7 @@ const REQUIRED_MODELS = [
   'taskTemplate',
   'nodeUpdate',
   'convite',
+  'oAuthCliente',
 ] as const;
 
 export function hasModel(name: string): boolean {

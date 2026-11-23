@@ -49,6 +49,7 @@ export function ContaCard() {
       <CardContent className="space-y-6">
         <ServidorAtual className="justify-start" />
         <TrocarSenha />
+        <ConectarAoClaude />
         <TokensDeApi />
       </CardContent>
     </Card>
@@ -124,6 +125,44 @@ function TrocarSenha() {
         Os outros aparelhos saem na hora, e os tokens de API sao revogados.
       </p>
     </form>
+  );
+}
+
+/**
+ * O MCP remoto: o Claude da web e do celular fala com este servidor em
+ * `/mcp`, com a autorizacao que a pessoa da no proprio Chronos (OAuth). A
+ * origem e a desta tela: no app desktop, a do servidor escolhido.
+ */
+function ConectarAoClaude() {
+  const url = `${window.location.origin}/mcp`;
+  const [copiado, setCopiado] = useState(false);
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiado(true);
+    } catch {
+      toast.error('Nao deu para copiar. Selecione o endereco e copie na mao.');
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="text-sm font-medium">Claude na web e no celular</div>
+      <p className="text-xs text-muted-foreground">
+        No claude.ai, va em Configuracoes &rarr; Conectores &rarr; Adicionar conector personalizado, cole este endereco e
+        entre com a sua conta do Chronos. Depois o conector aparece tambem no app do Claude no celular.
+      </p>
+      <div className="flex gap-2">
+        <Input readOnly value={url} className="font-mono text-xs" onFocus={(e) => e.target.select()} />
+        <Button type="button" variant="outline" onClick={copiar}>
+          {copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copiado ? 'Copiado' : 'Copiar'}
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        A autorizacao aparece em Tokens de API como "Conector: ...". Revogar desconecta o Claude na hora.
+      </p>
+    </div>
   );
 }
 

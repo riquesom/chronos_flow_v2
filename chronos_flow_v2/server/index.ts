@@ -26,6 +26,8 @@ import aiRoutes from './modules/ai/ai.routes.js';
 import updateRoutes from './modules/updates/updates.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
+import oauthRoutes from './modules/oauth/oauth.routes.js';
+import mcpRoutes from './modules/mcp/mcp.routes.js';
 import transferRoutes, { nomeDesteComputador } from './modules/transfer/transfer.routes.js';
 import { anunciar, PORTA_DESCOBERTA } from './lib/descoberta.js';
 import { FORMATO_DO_PACOTE } from '../shared/transferencia.js';
@@ -56,6 +58,12 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Entrar, cadastrar e consultar o estado da sessao precisam funcionar sem login.
+// MCP remoto e a autorizacao OAuth dele: o Claude da web e do celular entra
+// por aqui. Ficam fora de `/api` (o padrao do OAuth e do MCP) e antes da tela,
+// que responderia o index.html para qualquer GET.
+app.use(oauthRoutes);
+app.use('/mcp', mcpRoutes);
+
 app.use('/api/auth', authRoutes);
 
 /**

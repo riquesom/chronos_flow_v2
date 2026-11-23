@@ -226,28 +226,38 @@ router.post(
   }),
 );
 
+/**
+ * E-mail e senha conferidos, com os mesmos freios da tela de entrada. Usada
+ * aqui e na autorizacao do conector do Claude (`/oauth/authorize`): as duas
+ * portas contam tentativas juntas.
+ */
+export async function conferirCredenciais(req: Request, email: string, senha: string) {
+  // As duas contagens antes de qualquer await: uma rajada paralela nao
+  // passa toda pela checagem antes da primeira falha ser registrada.
+  const emailOk = porEmail.tentar(email);
+  const clienteOk = porCliente.tentar(cliente(req));
+  if (!emailOk || !clienteOk) throw devagar();
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  const ok = user ? await conferirSenha(senha, user.password_hash) : false;
+  if (!user) await gastarTempoDeConferencia(senha);
+
+  if (!user || !ok) throw new AppError('CREDENCIAIS_INVALIDAS', 'E-mail ou senha incorretos.');
+  // Dito so depois da senha certa: quem nao tem a senha nao fica sabendo nem
+  // que a conta existe, muito menos que esta bloqueada.
+  if (user.bloqueado_em) {
+    throw new AppError('CONTA_BLOQUEADA', 'Esta conta esta bloqueada. Fale com o administrador.');
+  }
+
+  porEmail.liberar(email);
+  return user;
+}
+
 router.post(
   '/entrar',
   asyncHandler(async (req, res) => {
     const { email, senha, app } = entrarSchema.parse(req.body);
-    // As duas contagens antes de qualquer await: uma rajada paralela nao
-    // passa toda pela checagem antes da primeira falha ser registrada.
-    const emailOk = porEmail.tentar(email);
-    const clienteOk = porCliente.tentar(cliente(req));
-    if (!emailOk || !clienteOk) throw devagar();
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    const ok = user ? await conferirSenha(senha, user.password_hash) : false;
-    if (!user) await gastarTempoDeConferencia(senha);
-
-    if (!user || !ok) throw new AppError('CREDENCIAIS_INVALIDAS', 'E-mail ou senha incorretos.');
-    // Dito so depois da senha certa: quem nao tem a senha nao fica sabendo nem
-    // que a conta existe, muito menos que esta bloqueada.
-    if (user.bloqueado_em) {
-      throw new AppError('CONTA_BLOQUEADA', 'Esta conta esta bloqueada. Fale com o administrador.');
-    }
-
-    porEmail.liberar(email);
+    const user = await conferirCredenciais(req, email, senha);
     const sessao = await abrirSessao(req, res, user.id, { app: Boolean(app) });
     res.json({
       ...(await estado(req, { userId: user.id, via: 'sessao' })),

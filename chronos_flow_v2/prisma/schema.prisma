@@ -96,17 +96,32 @@ model Session {
 /// Token de API pessoal, para o MCP e scripts. Aparece uma vez na tela; aqui
 /// fica so o hash e o comeco, para a lista dizer qual e qual.
 model ApiToken {
-  id           String    @id @default(uuid())
-  user_id      String
-  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  name         String
-  token_hash   String    @unique
-  prefix       String
-  created_at   DateTime  @default(now())
-  last_used_at DateTime?
+  id            String    @id @default(uuid())
+  user_id       String
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name          String
+  token_hash    String    @unique
+  prefix        String
+  created_at    DateTime  @default(now())
+  last_used_at  DateTime?
+  /// Preenchido quando o token nasceu de uma autorizacao OAuth (o conector do
+  /// Claude): o client_id que pediu. Autorizar de novo troca o token antigo.
+  cliente_oauth String?
 
   @@index([user_id])
   @@map("api_tokens")
+}
+
+/// Cliente OAuth que se registrou sozinho (Dynamic Client Registration) para
+/// falar com o MCP remoto — na pratica, o conector do Claude. Cliente publico:
+/// sem segredo, protegido por PKCE e por URLs de retorno exatas.
+model OAuthCliente {
+  id            String   @id @default(uuid())
+  nome          String
+  redirect_uris String[]
+  criado_em     DateTime @default(now())
+
+  @@map("oauth_clientes")
 }
 
 /// Convite individual: um link para uma pessoa, de uso unico, com prazo. O

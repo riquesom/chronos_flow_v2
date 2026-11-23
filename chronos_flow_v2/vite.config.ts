@@ -17,7 +17,14 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
-    proxy: { '/api': 'http://localhost:3101' },
+    // /mcp, /oauth e /.well-known: o MCP remoto e a autorizacao do Claude,
+    // para o endereco mostrado em Configuracoes funcionar tambem aqui.
+    proxy: {
+      '/api': 'http://localhost:3101',
+      '/mcp': 'http://localhost:3101',
+      '/oauth': 'http://localhost:3101',
+      '/.well-known': 'http://localhost:3101',
+    },
   },
   build: { outDir: 'dist', emptyOutDir: true },
 });
